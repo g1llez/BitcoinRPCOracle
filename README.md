@@ -1,6 +1,6 @@
-# UTXOracle-RPC
+# BitcoinRPCOracle
 
-Enhanced version of UTXOracle using Bitcoin RPC calls for universal compatibility.
+Enhanced Bitcoin price oracle using RPC calls for universal node compatibility.
 
 ## 🚀 Key Improvements
 
@@ -28,8 +28,8 @@ The original UTXOracle reads Bitcoin block files directly from disk, which doesn
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/g1llez/UTXOracle-RPC.git
-cd UTXOracle-RPC
+git clone https://github.com/g1llez/BitcoinRPCOracle.git
+cd BitcoinRPCOracle
 ```
 
 2. Ensure your `bitcoin.conf` has:
@@ -88,7 +88,7 @@ Ensure your Bitcoin node is properly configured and synchronized. The script wil
 To run UTXOracle automatically every hour:
 ```bash
 # Add to crontab
-0 * * * * /home/user/UTXOracle-RPC/UTXOracle_cron.sh
+0 * * * * /home/user/BitcoinRPCOracle/UTXOracle_cron.sh
 ```
 
 ## 📈 How It Works
@@ -106,11 +106,11 @@ To run UTXOracle automatically every hour:
 
 ## 📝 License
 
-This project maintains the same custom license as the original UTXOracle. See the license section in `UTXOracle.py` for full details.
+This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Credits
 
-Based on the original UTXOracle by [@SteveSimple](https://twitter.com/SteveSimple). This fork focuses on RPC compatibility and enhanced automation features.
+Inspired by the original UTXOracle concept by [@SteveSimple](https://twitter.com/SteveSimple). This independent implementation focuses on RPC compatibility and enhanced automation features.
 
 ## 🐛 Issues & Contributing
 

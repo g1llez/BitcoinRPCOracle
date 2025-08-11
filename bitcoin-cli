@@ -1,0 +1,2 @@
+#!/bin/bash
+exec docker exec -i bitcoin-knots_bitcoind_1 bitcoin-cli "$@"
