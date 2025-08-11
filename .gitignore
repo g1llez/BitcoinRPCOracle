@@ -1,0 +1,45 @@
+# Generated HTML files
+*.html
+
+# Log files
+*.log
+perfdata*.log
+
+# Cache files
+/var/cache/utxoracle/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Bitcoin data (if accidentally copied)
+blocks/
+chainstate/
+bitcoin.conf
+.cookie
+
+# Backup files
+backup/
+*.bak
