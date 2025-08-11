@@ -1,15 +1,4 @@
 #########################################################################################  
-#                                                                                       #
-#   /$$$$$$$  /$$   /$$                           /$$           /$$$$$$$  /$$$$$$$      #
-#  | $$__  $$|__/  | $$                          |__/          | $$__  $$| $$__  $$     #
-#  | $$  \ $$ /$$ /$$$$$$   /$$$$$$  /$$$$$$  /$$ /$$  /$$$$$$ | $$  \ $$| $$  \ $$     #
-#  | $$$$$$$ | $$|_  $$_/  /$$__  $$|____  $$| $$| $$ /$$__  $$| $$$$$$$/| $$$$$$$/     #
-#  | $$__  $$| $$  | $$   | $$  \__/ /$$$$$$$| $$| $$| $$  \ $$| $$__  $$| $$____/      #
-#  | $$  \ $$| $$  | $$ /$$| $$      /$$__  $$| $$| $$| $$  | $$| $$  \ $$| $$           #
-#  | $$$$$$$/| $$  |  $$$$/| $$     |  $$$$$$$| $$| $$|  $$$$$$/| $$  | $$| $$           #
-#  |_______/ |__/   \___/  |__/      \_______/|__/|__/ \______/ |__/  |__/|__/           #
-#                                                                                       #
-#########################################################################################  
 #                          BitcoinRPCOracle - RPC Enhanced Version                     #
 #                                                                                       #
 # Licensed under the Apache License, Version 2.0 (the "License");                     #
@@ -83,7 +72,7 @@
 
 ###############################################################################  
 
-# --- BitcoinRPC: classe d'accès RPC via bitcoin-cli ---
+# --- BitcoinRPC: RPC access class via bitcoin-cli ---
 from signal import pause
 import subprocess
 import json
@@ -181,6 +170,7 @@ Options:
   -d YYYY/MM/DD    Specify a UTC date to evaluate
   -p /path/to/dir  Specify the data directory for blk files
   -rb              Use last 144 recent blocks instead of date mode
+  -br START END    Use specific block range (e.g. -br 850000 850144)
   --no-html        Disable HTML generation
 """
     print(help_text)
@@ -207,10 +197,29 @@ if "-rb" in sys.argv:
     date_mode = False
     block_mode = True
 
-# Option pour désactiver la génération du HTML
+# Option to disable HTML generation
 no_html = False
 if "--no-html" in sys.argv or "-q" in sys.argv:
     no_html = True
+
+# Option to specify a custom block range
+if "-br" in sys.argv:
+    br_index = sys.argv.index("-br")
+    if br_index + 2 < len(sys.argv):
+        try:
+            block_start_num = int(sys.argv[br_index + 1])
+            block_finish_num = int(sys.argv[br_index + 2])
+            date_mode = False
+            block_mode = True
+            print(f"Using custom block range: {block_start_num} to {block_finish_num}")
+        except ValueError:
+            print("Error: -br requires two integer arguments (START END)")
+            print("Example: -br 850000 850144")
+            sys.exit(1)
+    else:
+        print("Error: -br requires two arguments (START END)")
+        print("Example: -br 850000 850144")
+        sys.exit(1)
 
 # Validate bitcoin.conf in data_dir
 conf_path = os.path.join(data_dir, "bitcoin.conf")
@@ -417,11 +426,17 @@ def get_day_of_month(time_in_seconds):
 #if block mode add the blocks and hashes to a list
 if block_mode:
     
-    print("\nFinding the last 144 blocks",flush=True)
-    
-    #get the last block number of the day
-    block_finish_num = block_count
-    block_start_num = block_finish_num - 144
+    # Check if it's recent blocks (-rb) or custom range (-br)
+    if block_start_num == 0 and block_finish_num == 0:
+        # Recent blocks mode (-rb)
+        print("\nFinding the last 144 blocks",flush=True)
+        
+        #get the last block number of the day
+        block_finish_num = block_count
+        block_start_num = block_finish_num - 144
+    else:
+        # Custom block range mode (-br)
+        print(f"\nUsing custom block range: {block_start_num} to {block_finish_num}",flush=True)
     
     #append needed block nums and hashes needed
     block_num = block_start_num
@@ -563,10 +578,10 @@ elif date_mode:
 # --- VERSION RPC ---
 print("\nMapping block locations using RPC", flush=True)
 
-# Initialiser l'instance RPC (en utilisant les options déjà lues du conf)
+# Initialize RPC instance (using options already read from config)
 rpc = BitcoinRPC("./bitcoin-cli")
 
-# block_hashes_needed doit être une liste de str (hashes hex)
+# block_hashes_needed must be a list of str (hex hashes)
 if isinstance(block_hashes_needed, set):
     block_hashes_needed = list(block_hashes_needed)
 
@@ -583,7 +598,7 @@ for i, block_hash in enumerate(block_hashes_needed):
             "block_hash": block_hash,
             "rpc_source": True
         }
-    # Affichage du progrès
+    # Progress display
     if (i+1)/len(block_hashes_needed)*100 > print_next:
         if print_next < 100:
             print(str(print_next)+"%..", end="", flush=True)
@@ -678,12 +693,12 @@ for i, (block_hash, meta) in enumerate(found_blocks.items()):
     block_num += 1
     txs_to_add = []
 
-    # Affichage du progrès
+    # Progress display
     if block_num / len(found_blocks) * 100 > print_next:
         print(str(print_next) + "%..", end="", flush=True)
         print_next += 20
 
-    # Récupérer toutes les transactions du bloc (détail complet)
+    # Retrieve all transactions from the block (full detail)
     block_data = rpc.get_block(block_hash, verbosity=2)
     if not isinstance(block_data, dict) or "tx" not in block_data:
         continue
@@ -709,13 +724,13 @@ for i, (block_hash, meta) in enumerate(found_blocks.items()):
             if total_witness_len > 500:
                 witness_exceeds = True
 
-        # Récupérer les txids des inputs
+        # Retrieve input txids
         input_txids = [vin.get("txid") for vin in tx.get("vin", []) if "txid" in vin]
 
-        # Vérifier la réutilisation d'input le même jour
+        # Check for input reuse on the same day
         is_same_day_tx = any(itxid in todays_txids for itxid in input_txids)
 
-        # Appliquer les mêmes critères de filtrage qu'avant
+        # Apply the same filtering criteria as before
         if (
             input_count <= 5 and output_count == 2 and not is_coinbase and
             not has_op_return and not witness_exceeds and not is_same_day_tx
@@ -732,7 +747,7 @@ for i, (block_hash, meta) in enumerate(found_blocks.items()):
 
 print("100% \t\t\t95% done", flush=True)
 
-print("Nombre d'outputs collectés:", len(raw_outputs))
+print("Number of outputs collected:", len(raw_outputs))
 
             
 
@@ -764,7 +779,7 @@ for amount in raw_outputs:
     amount_log = log10(amount)
     percent_in_range = (amount_log - first_bin_value) / range_bin_values
     bin_number_est = int(percent_in_range * number_of_bins)
-    # Sécurité pour ne pas dépasser les bornes
+    # Safety to not exceed bounds
     if bin_number_est >= number_of_bins:
         bin_number_est = number_of_bins - 1
     while bin_number_est > 0 and output_bell_curve_bins[bin_number_est] > amount:
@@ -1206,7 +1221,10 @@ print("100%\t\t\tdone",flush=True)
 if date_mode:
     print("\n\n\t\t"+price_day_date_utc+" price: $"+f"{int(central_price):,}\n\n",flush=True)
 elif block_mode:
-    print(f"\n\n\t\tRecent {len(block_nums_needed)} blocks price: ${int(central_price):,}\n\n",flush=True)
+    if block_start_num == 0 and block_finish_num == 0:
+        print(f"\n\n\t\tRecent {len(block_nums_needed)} blocks price: ${int(central_price):,}\n\n",flush=True)
+    else:
+        print(f"\n\n\t\tBlocks {block_start_num}-{block_finish_num} price: ${int(central_price):,}\n\n",flush=True)
 
 
 

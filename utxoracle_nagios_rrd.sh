@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Usage: ./utxoracle_nagios_rrd.sh 2025-07-01 2025-07-16
-# Génère 24 points par jour (un par heure, de 00:00 à 23:00 UTC) pour chaque jour de la plage
+# Generates 24 points per day (one per hour, from 00:00 to 23:00 UTC) for each day in the range
 
 if [ $# -ne 2 ]; then
   echo "Usage: $0 START_DATE END_DATE (format: YYYY-MM-DD)"
@@ -21,7 +21,7 @@ while [ $current_ts -le $end_ts ]; do
   # Date au format DD-MM-YYYY pour CoinGecko
   DATE_CG=$(date -u -d "@$current_ts" +"%d-%m-%Y")
 
-  # Mesurer la durée d'exécution
+  # Measure execution time
   start_time=$(date +%s)
   OUTPUT=$(python3 "$(dirname "$0")/UTXOracle.py" -d "$DATE_UTXO" --no-html 2>&1)
   end_time=$(date +%s)
@@ -44,12 +44,12 @@ while [ $current_ts -le $end_ts ]; do
 
   AGE=0
 
-  # Debug si pas de prix ou exécution trop rapide
+  # Debug if no price or execution too fast
   if [ -z "$ORACLE_PRICE" ] || [ "$duration" -lt 10 ]; then
     echo "[DEBUG] Date: $DATE_UTXO | Durée: ${duration}s | Prix Oracle: '$ORACLE_PRICE' | Ligne: '$PRICE_LINE' | Sortie: $OUTPUT" >&2
   fi
 
-  # Générer 24 points espacés d'1h (00:00 à 23:00 UTC)
+  # Generate 24 points spaced by 1h (00:00 to 23:00 UTC)
   for h in $(seq 0 23); do
     TS_DAY=$((current_ts + h * 3600))
     # Calcul du delta en pourcentage (si possible)
